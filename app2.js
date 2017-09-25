@@ -1,64 +1,34 @@
-// This loads the environment variables from the .env file
-require('dotenv-extended').load();
+/*-----------------------------------------------------------------------------
+A simple echo bot for the Microsoft Bot Framework. 
+-----------------------------------------------------------------------------*/
 
-var express = require('express');
-var path = require('path');
-var favicon = require('serve-favicon');
+var restify = require('restify');
+var builder = require('botbuilder');
 
-// Web app
-var app = express();
-var bodyParser = require('body-parser');
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'pug');
-app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Register your web app routes here
-app.get('/', function (req, res, next) {
-  res.render('index', { title: 'Contoso Flowers' });
+// Setup Restify Server
+var server = restify.createServer();
+server.listen(process.env.port || process.env.PORT || 3978, function () {
+   console.log('%s listening to %s', server.name, server.url); 
+});
+  
+// Create chat connector for communicating with the Bot Framework Service
+var connector = new builder.ChatConnector({
+    appId: process.env.MicrosoftAppId,
+    appPassword: process.env.MicrosoftAppPassword,
+    stateEndpoint: process.env.BotStateEndpoint,
+    openIdMetadata: process.env.BotOpenIdMetadata 
 });
 
-// Register Checkout page
-var checkout = require('./checkout');
-app.use('/checkout', checkout);
+// Listen for messages from users 
+server.post('/api/messages', connector.listen());
 
-// Register Bot
-var bot = require('./bot');
-app.post('/api/messages', bot.listen());
+/*----------------------------------------------------------------------------------------
+* Bot Storage: This is a great spot to register the private state storage for your bot. 
+* We provide adapters for Azure Table, CosmosDb, SQL Azure, or you can implement your own!
+* For samples and documentation, see: https://github.com/Microsoft/BotBuilder-Azure
+* ---------------------------------------------------------------------------------------- */
 
-// Catch 404 and forward to error handler
-app.use(function (req, res, next) {
-  var err = new Error('Not Found');
-  err.status = 404;
-  next(err);
-});
-
-// Error handlers
-
-// Development error handler, will print stacktrace
-if (app.get('env') === 'development') {
-  app.use(function (err, req, res, next) {
-    res.status(err.status || 500);
-    res.render('error', {
-      message: err.message,
-      error: err
-    });
-  });
-}
-
-// Production error handler, no stacktraces leaked to user
-app.use(function (err, req, res, next) {
-  res.status(err.status || 500);
-  res.render('error', {
-    message: err.message,
-    error: {}
-  });
-});
-
-// Start listening
-var port = process.env.port || process.env.PORT || 3978;
-app.listen(port, function () {
-  console.log('Web Server listening on port %s', port);
+// Create your bot with a function to receive messages from the user
+var bot = new builder.UniversalBot(connector, function (session) {
+    session.send("Akhil1: You said: %s", session.message.text);
 });
